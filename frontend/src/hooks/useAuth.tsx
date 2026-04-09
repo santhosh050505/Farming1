@@ -34,23 +34,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+const signUp = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
   });
 
-  // safety check
-  if (data && data.user) {
+  if (error) return { error };
+
+  // 🔥 ALWAYS get user from session instead
+  const { data: sessionData } = await supabase.auth.getSession();
+
+  const user = sessionData?.session?.user;
+
+  if (user) {
     await supabase.from("profiles").insert([
       {
-        id: data.user.id,
-        email: data.user.email,
+        id: user.id,
+        email: user.email,
       },
     ]);
   }
 
-  return { error: error as Error | null };
+  return { error: null };
 };
 
   const signIn = async (email: string, password: string) => {
